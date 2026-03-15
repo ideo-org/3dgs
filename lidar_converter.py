@@ -442,12 +442,16 @@ def main():
 
     # 6. Copy RGB images to images/
     print("Copying images...")
+    copied_count = 0
     for frame in frames_data:
         src = frames_dir / f"{frame['frame_id']:06d}_rgb.jpg"
         dst = images_dir / frame["name"]
         if src.exists():
             shutil.copy2(src, dst)
-
+            copied_count += 1
+        else:
+            print(f"  WARNING: Missing RGB for frame {frame['frame_id']:06d}")
+    print(f"Copied {copied_count}/{len(frames_data)} images")
     # 7. Write cameras.txt
     write_cameras_txt(sparse_dir / "cameras.txt", fx, fy, cx, cy, image_w, image_h)
     print(f"Written cameras.txt (PINHOLE {image_w}x{image_h})")
@@ -458,11 +462,11 @@ def main():
 
     # 9. Build/load point cloud
     global_cloud_path = input_path / "global_cloud.ply"
-    if global_cloud_path.exists() and args.skip_cloud:
-        print("Loading global_cloud.ply...")
-        points, colors = load_global_cloud(global_cloud_path)
+    if args.skip_cloud:
+        print("Building point cloud from depth maps (--skip-cloud ignores global_cloud.ply)...")
+        points, colors = build_point_cloud_from_depth(frames_dir, frames_data)
     elif global_cloud_path.exists():
-        print("Loading global_cloud.ply (use --skip-cloud to skip depth processing)...")
+        print("Loading global_cloud.ply (use --skip-cloud to force depth processing)...")
         points, colors = load_global_cloud(global_cloud_path)
     else:
         print("Building point cloud from depth maps...")

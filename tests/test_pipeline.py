@@ -18,17 +18,19 @@ import shutil
 import struct
 import subprocess
 import sys
+import tempfile
 
 import numpy as np
 
 # Paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LIDAR_DIR = os.path.dirname(SCRIPT_DIR)  # N:\2020\3dgs-lidar
-GRAPHDECO_DIR = os.path.join(os.path.dirname(LIDAR_DIR), "3dgs")  # N:\2020\3dgs
+GRAPHDECO_DIR = os.environ.get("GRAPHDECO_DIR", os.path.join(os.path.dirname(LIDAR_DIR), "3dgs"))
 
-BUNDLE_DIR = os.path.join("C:\\", "tmp", "e2e_bundle")
-SCENE_DIR = os.path.join("C:\\", "tmp", "e2e_scene")
-MODEL_DIR = os.path.join("C:\\", "tmp", "e2e_model")
+_TEST_TMP = os.environ.get("TEST_TMP_DIR", os.path.join(tempfile.gettempdir(), "lidar_test"))
+BUNDLE_DIR = os.path.join(_TEST_TMP, "e2e_bundle")
+SCENE_DIR = os.path.join(_TEST_TMP, "e2e_scene")
+MODEL_DIR = os.path.join(_TEST_TMP, "e2e_model")
 
 NUM_FRAMES = 20
 PASS_COUNT = 0
@@ -442,8 +444,11 @@ def main():
     )
     ok_gd = stage_graphdeco(no_gpu=args.no_gpu) if ok_conv else (fail("Skipping graphdeco load") or False)
 
-    if not args.no_gpu:
+if not args.no_gpu:
+    if ok_conv and ok_gd:
         stage_gpu_training()
+    else:
+        fail("Skipping GPU training — prior stages failed")
 
     print(f"\n{'=' * 50}")
     print(f"PASSED {PASS_COUNT}/{PASS_COUNT + FAIL_COUNT} tests")

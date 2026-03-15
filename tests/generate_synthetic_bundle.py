@@ -546,6 +546,10 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.num_frames < 1:
+        print("ERROR: --num-frames must be at least 1", file=sys.stderr)
+        sys.exit(1)
+
     if args.num_frames > 100:
         print("ERROR: --num-frames cannot exceed 100", file=sys.stderr)
         sys.exit(1)

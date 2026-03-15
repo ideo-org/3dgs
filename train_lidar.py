@@ -248,17 +248,31 @@ def main():
         model_dir / "point_cloud" / f"iteration_{preview_iter}" / "point_cloud.ply"
     )
     preview_spz = output_path / "preview.spz"
+    preview_ply_fallback = output_path / "preview.ply"
     if preview_ply.exists():
-        export_spz(preview_ply, preview_spz)
-        post_callback(
-            args.preview_callback,
-            {
-                "pass": "preview",
-                "status": "done",
-                "previewUrl": str(preview_spz),
-                "iterations": preview_iter,
-            },
-        )
+        try:
+            export_spz(preview_ply, preview_spz)
+        except Exception as e:
+            print(f"[spz] ERROR exporting preview SPZ: {e}")
+        # Determine actual file to report
+        if preview_spz.exists():
+            preview_url = str(preview_spz)
+        elif preview_ply_fallback.exists():
+            preview_url = str(preview_ply_fallback)
+        else:
+            print(f"[WARN] No preview file (SPZ or PLY) available")
+            preview_url = None
+        # Only post callback if we have a file
+        if preview_url:
+            post_callback(
+                args.preview_callback,
+                {
+                    "pass": "preview",
+                    "status": "done",
+                    "previewUrl": preview_url,
+                    "iterations": preview_iter,
+                },
+            )
     else:
         print(f"[WARN] Preview PLY not found at {preview_ply}")
 
@@ -290,22 +304,36 @@ def main():
 
     run_stage(train_cmd, env=env, stage_name=f"TRAIN_{final_iter}")
 
-    # ── Stage 5: Export final SPZ ──────────────────────────────────
+    # ── Stage 5: Export final SPZ ──────────────────────────────────────
     final_ply = (
         model_dir / "point_cloud" / f"iteration_{final_iter}" / "point_cloud.ply"
     )
     final_spz = output_path / "final.spz"
+    final_ply_fallback = output_path / "final.ply"
     if final_ply.exists():
-        export_spz(final_ply, final_spz)
-        post_callback(
-            args.final_callback,
-            {
-                "pass": "final",
-                "status": "done",
-                "splatUrl": str(final_spz),
-                "iterations": final_iter,
-            },
-        )
+        try:
+            export_spz(final_ply, final_spz)
+        except Exception as e:
+            print(f"[spz] ERROR exporting final SPZ: {e}")
+        # Determine actual file to report
+        if final_spz.exists():
+            final_url = str(final_spz)
+        elif final_ply_fallback.exists():
+            final_url = str(final_ply_fallback)
+        else:
+            print(f"[WARN] No final file (SPZ or PLY) available")
+            final_url = None
+        # Only post callback if we have a file
+        if final_url:
+            post_callback(
+                args.final_callback,
+                {
+                    "pass": "final",
+                    "status": "done",
+                    "splatUrl": final_url,
+                    "iterations": final_iter,
+                },
+            )
     else:
         print(f"[WARN] Final PLY not found at {final_ply}")
 
